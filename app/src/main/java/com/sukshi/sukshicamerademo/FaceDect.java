@@ -38,6 +38,7 @@ public class FaceDect {
 
     public static OnMultipleFacesDetectedListener onMultipleFacesDetectedListener;
     public static OnCaptureListener onCaptureListener;
+    public static OnFaceUpdateListener onFaceUpdateListener;
 
     public static FaceDetector previewFaceDetector = null;
     private GraphicOverlay mGraphicOverlay;
@@ -47,6 +48,12 @@ public class FaceDect {
      * **/
     public interface OnMultipleFacesDetectedListener {
         void onMultipleFacesDetected(int n);
+    }
+    /**
+     * Interface callback on multiple faces detected with face count.
+     * **/
+    public interface OnFaceUpdateListener {
+        void onFaceUpdate(FaceDetector.Detections<Face> detectionResults, final Face face);
     }
     /**
      * Interface callback return captured image byte array and angle of orientation image.
@@ -67,6 +74,7 @@ public class FaceDect {
 //        this.mOnFrontalFaceDetectedListener = (OnFrontalFaceDetectedListener) context;
         this.onMultipleFacesDetectedListener = (OnMultipleFacesDetectedListener) context;
         this.onCaptureListener= (OnCaptureListener) context;
+        onFaceUpdateListener = (OnFaceUpdateListener) context;
     }
 
     public FaceDect(Context mcontext) {
@@ -81,10 +89,9 @@ public class FaceDect {
      * Multiprocessor is a class to handle high speed frames stream optimised to use multiple processors.
      * **/
     public void initialisefaceDetec() {
-
         previewFaceDetector = new FaceDetector.Builder(context)
                 .setClassificationType(FaceDetector.ALL_CLASSIFICATIONS)
-                .setLandmarkType(FaceDetector.ALL_LANDMARKS)
+                .setLandmarkType(FaceDetector.ACCURATE_MODE)
                 .setMode(FaceDetector.FAST_MODE)
                 .setProminentFaceOnly(false)
                 .setTrackingEnabled(true)
@@ -135,12 +142,9 @@ public class FaceDect {
         @SuppressLint("ResourceAsColor")
         @Override
         public void onUpdate(FaceDetector.Detections<Face> detectionResults, final Face face) {
-
-            List<Landmark> landmarks = face.getLandmarks();
-            int landmarksCount = landmarks.size();
-
-            Log.e("landmarksCount", String.valueOf(landmarksCount));
-
+            if(onFaceUpdateListener != null){
+                onFaceUpdateListener.onFaceUpdate(detectionResults,face);
+            }
             mOverlay.add(mFaceGraphic);
             mFaceGraphic.updateFace(face);
         }

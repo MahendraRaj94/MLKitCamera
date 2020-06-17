@@ -20,17 +20,24 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.Matrix;
 import android.media.ExifInterface;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.AppCompatTextView;
+
+import com.google.android.gms.vision.Detector;
+import com.google.android.gms.vision.face.Face;
+import com.google.android.gms.vision.face.Landmark;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -38,13 +45,15 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.List;
 
 import static com.sukshi.sukshicamerademo.FaceDect.previewFaceDetector;
 
 
-public class CameraActivity extends AppCompatActivity implements FaceDect.OnMultipleFacesDetectedListener, FaceDect.OnCaptureListener {
+public class CameraActivity extends AppCompatActivity implements FaceDect.OnMultipleFacesDetectedListener, FaceDect.OnCaptureListener, FaceDect.OnFaceUpdateListener {
 
     private static final String TAG = "Custom Camera";
+    public static final String IMAGE_BITMAP = "bitmap";
     private Context context;
     public CameraSource mCameraSource;
 
@@ -57,8 +66,10 @@ public class CameraActivity extends AppCompatActivity implements FaceDect.OnMult
     private boolean wasActivityResumed = false;
 
     String username = "vishwam";
-
+    ImageView camera;
+    CircleOverlayView overlayView;
     ImageView previewImages;
+    AppCompatTextView tvError;
     public static boolean takePicture;
 
     @Override
@@ -68,8 +79,9 @@ public class CameraActivity extends AppCompatActivity implements FaceDect.OnMult
 
         context = getApplicationContext();
         takePicture = false;
-
-        ImageView camera = findViewById(R.id.camera);
+        tvError = findViewById(R.id.tvError);
+        overlayView = findViewById(R.id.overlay);
+        camera = findViewById(R.id.camera);
 
         previewImages = findViewById(R.id.preview);
         RelativeLayout relativeLayout = findViewById(R.id.camRLayout);
@@ -79,6 +91,12 @@ public class CameraActivity extends AppCompatActivity implements FaceDect.OnMult
         createCameraSourceFront();
         startCameraSource();
 
+        findViewById(R.id.ivClose).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                CameraActivity.this.finish();
+            }
+        });
         camera.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -90,12 +108,10 @@ public class CameraActivity extends AppCompatActivity implements FaceDect.OnMult
 
     @Override
     public void onMultipleFacesDetected(int n) {
-
     }
 
     @Override
     public void onCapture(byte[] data, int angle) {
-
         stopCameraSource();
         Bitmap OriginalBitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
         Matrix matrix = new Matrix();
@@ -105,7 +121,7 @@ public class CameraActivity extends AppCompatActivity implements FaceDect.OnMult
     }
 
 
-    public void saveFile(Bitmap bitmap) {
+    public void saveFile(final Bitmap bitmap) {
 
         File file = getOutputMediaFile();
         String path = file.getPath();
@@ -133,7 +149,7 @@ public class CameraActivity extends AppCompatActivity implements FaceDect.OnMult
 
     private void createCameraSourceFront() {
         faceDect = new FaceDect(this, mGraphicOverlay);
-
+        faceDect.initialisefaceDetec();
         mCameraSource = new CameraSource.Builder(context, previewFaceDetector )
                 .setFacing(CameraSource.CAMERA_FACING_FRONT)
                 .setRequestedFps(30.0f)
@@ -170,16 +186,15 @@ public class CameraActivity extends AppCompatActivity implements FaceDect.OnMult
 
     @Override
     protected void onPause() {
-        super.onPause();
-
         wasActivityResumed = true;
         stopCameraSource();
+        super.onPause();
     }
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
         stopCameraSource();
+        super.onDestroy();
     }
 
     public File getOutputMediaFile() {
@@ -201,4 +216,69 @@ public class CameraActivity extends AppCompatActivity implements FaceDect.OnMult
 
         return file;
     }
+
+    private String getMessage(Facing face){
+        switch (face){
+            case STRAIGHT:
+                return "Face is straight";
+            case TURNED_LEFT:
+                return "Face turned to left";
+            case TURNED_RIGHT:
+                return  "Face turned to right";
+            case TILTED_LEFT:
+                return "Face tilted to left";
+            case TILTED_RIGHT:
+                return "Face tilted to right";
+        }
+        return null;
+    }
+
+    private Facing getFacing(Face face){
+        if(face.getEulerZ() > 5){//tilted right
+            return Facing.TILTED_RIGHT;
+        }else if(face.getEulerZ() < -5){ //tilted left
+            return Facing.TILTED_LEFT;
+        }else if(face.getEulerY() > 5){
+            return Facing.TURNED_LEFT;
+        }else if(face.getEulerY() < -5){
+            return  Facing.TURNED_RIGHT;
+        }else{
+            return Facing.STRAIGHT;
+        }
+    }
+    @Override
+    public void onFaceUpdate(Detector.Detections<Face> detectionResults,final Face face) {
+       final Facing faceSide = getFacing(face);
+        final String message = getMessage(faceSide);
+        if(camera != null){
+            camera.post(new Runnable() {
+                @Override
+                public void run() {
+                    tvError.setVisibility(View.VISIBLE);
+                   if(camera != null){
+                        if(faceSide == Facing.STRAIGHT){
+                            camera.setEnabled(true);
+                            camera.setAlpha(1f);
+                            tvError.setVisibility(View.GONE);
+                        }else{
+                            camera.setEnabled(false);
+                            camera.setAlpha(0.7f);
+                            tvError.setVisibility(View.VISIBLE);
+                            tvError.setText(message);
+                        }
+                    }
+                }
+            });
+          }
+        if(overlayView  != null){
+            overlayView.post(new Runnable() {
+                @Override
+                public void run() {
+                    overlayView.setEnabled(faceSide == Facing.STRAIGHT);
+                    overlayView.updateLayout();
+                }
+            });
+        }
+    }
+
 }

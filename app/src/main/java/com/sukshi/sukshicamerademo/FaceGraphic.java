@@ -20,7 +20,9 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.Point;
 import android.graphics.PorterDuff;
 
@@ -56,6 +58,9 @@ public class FaceGraphic extends GraphicOverlay.Graphic {
     public FaceGraphic(GraphicOverlay overlay, Context context) {
         super(overlay);
         this.context1 = context;
+        mHintOutlinePaint = new Paint();
+        mHintOutlinePaint.setStrokeWidth(4);
+        mHintOutlinePaint.setStyle(Paint.Style.STROKE);
         opt = new BitmapFactory.Options();
         opt.inScaled = false;
         resources = context.getResources();
@@ -109,8 +114,10 @@ public class FaceGraphic extends GraphicOverlay.Graphic {
         float top = centerY - offsetY * 0.75f;
         float bottom = centerY + offsetY * 0.75f;
 
-//        if (mHintOutlinePaint != null){
-//            canvas.drawRect(left, top, right, bottom, mHintOutlinePaint);
-//        }
+        if (mHintOutlinePaint != null){
+            Path path = new Path();
+            path.addRect(left, top, right, bottom,Path.Direction.CW);
+            canvas.drawPath(path,mHintOutlinePaint);
+        }
     }
 }

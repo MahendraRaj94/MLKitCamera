@@ -3,8 +3,14 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".CameraActivity"
+    android:background="@color/white"
     android:id="@+id/camRLayout">
+<FrameLayout
+    android:layout_above="@+id/camera"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
 
     <com.sukshi.sukshicamerademo.CameraSourcePreview
         android:id="@+id/previewAuth"
@@ -18,11 +24,47 @@
 
     </com.sukshi.sukshicamerademo.CameraSourcePreview>
 
+    <com.sukshi.sukshicamerademo.CircleOverlayView
+        android:id="@+id/overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
+    <androidx.appcompat.widget.AppCompatTextView
+        android:text="Face Capture"
+        android:textColor="@color/color_black"
+        android:gravity="center_horizontal"
+        android:layout_marginTop="16dp"
+        android:textSize="20sp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/ivClose"
+        android:layout_gravity="end|top"
+        android:padding="16dp"
+        android:src="@drawable/ic_close"
+        android:layout_width="64dp"
+        android:layout_height="64dp"/>
+
+</FrameLayout>
+
     <ImageView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:id="@+id/preview"
         android:visibility="invisible"/>
+
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/tvError"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_above="@+id/camera"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="8dp"
+        android:visibility="gone"
+        android:textColor="@color/red"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
 
     <ImageView
         android:layout_width="80dp"
